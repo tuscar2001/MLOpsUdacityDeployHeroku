@@ -94,8 +94,8 @@ def train_models(x_tr, x_ts, y_tr, y_ts):
     print ("Performing a grid search ...")
     rfc = RandomForestClassifier(random_state=42)
     param_grid = { 
-    'n_estimators': [100],
-    'max_depth' : [3]}
+    'n_estimators': [100,200,300],
+    'max_depth' : [3,4,5]}
 
     cv_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv=5)
     cv_rfc.fit(x_tr, y_tr)
