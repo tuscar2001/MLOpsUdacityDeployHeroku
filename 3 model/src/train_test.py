@@ -1,5 +1,30 @@
+import joblib
+import numpy as np
+import pytest
+import pandas as pd
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import GridSearchCV
+from sklearn.linear_model import LogisticRegression
+import matplotlib.pylab as plt
+from dmba import classificationSummary, gainsChart, liftChart
+from sklearn.metrics import plot_roc_curve, classification_report
+from dmba.metric import AIC_score
+from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
+import logging
+
+logging.basicConfig(
+filename='/home/tuscar2022/Documents/Udacity MLOps projects/deployMLHeroku/deployHeroku/logs/train.log',
+level=logging.INFO,
+filemode='w',
+format='%(name)s - %(levelname)s - %(message)s')
+
+path = "/home/tuscar2022/Documents/Udacity MLOps projects/deployMLHeroku/deployHeroku/1 data/"
 
 
+@pytest.fixture
 def perform_eda(path):
     try:
         census = pd.read_csv(path + "/census.txt")
@@ -131,47 +156,24 @@ def classification_report_txt(report):
 
 
 
-if __name__ == "__main__":
-    import joblib
-    import numpy as np
-    import pandas as pd
-    import seaborn as sns
-    from sklearn.model_selection import train_test_split
-    from sklearn.linear_model import LogisticRegression
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.model_selection import GridSearchCV
-    from sklearn.linear_model import LogisticRegression
-    import matplotlib.pylab as plt
-    from dmba import classificationSummary, gainsChart, liftChart
-    from sklearn.metrics import plot_roc_curve, classification_report
-    from dmba.metric import AIC_score
-    from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
-    import logging
 
-    logging.basicConfig(
-    filename='/home/tuscar2022/Documents/Udacity MLOps projects/deployMLHeroku/deployHeroku/logs/train.log',
-    level=logging.INFO,
-    filemode='w',
-    format='%(name)s - %(levelname)s - %(message)s')
 
-    path = "/home/tuscar2022/Documents/Udacity MLOps projects/deployMLHeroku/deployHeroku/1 data/"
 
-    in_data = perform_eda(path)
-    in_data = import_processed_data(path)
-    cat_col =  [col for col in in_data.columns if in_data[col].dtype=="O"]
-    num_col = [col for col in in_data.columns if in_data[col].dtype!="O"]
-    X, y = encoder_helper(in_data, cat_col, num_col)
+in_data = import_processed_data(perform_eda(path))
+cat_col =  [col for col in in_data.columns if in_data[col].dtype=="O"]
+num_col = [col for col in in_data.columns if in_data[col].dtype!="O"]
+X, y = encoder_helper(in_data, cat_col, num_col)
+x_train, x_test, y_train, y_test = perform_feature_engineering(X, y)
+y_train_preds_rf, y_test_preds_rf = train_models(x_train,x_test,y_train,y_test)
+
+model = joblib.load('/home/tuscar2022/Documents/Udacity MLOps projects/deployMLHeroku/deployHeroku/3 model/output/model.pkl')
+
+evaluate_slices = []
+for j in in_data.education.unique():
+    sliced = in_data[in_data.education == j]
+    X, y = encoder_helper(sliced, cat_col, num_col)
     x_train, x_test, y_train, y_test = perform_feature_engineering(X, y)
     y_train_preds_rf, y_test_preds_rf = train_models(x_train,x_test,y_train,y_test)
-
-    model = joblib.load('/home/tuscar2022/Documents/Udacity MLOps projects/deployMLHeroku/deployHeroku/3 model/output/model.pkl')
-
-    evaluate_slices = []
-    for j in in_data.education.unique():
-        sliced = in_data[in_data.education == j]
-        X, y = encoder_helper(sliced, cat_col, num_col)
-        x_train, x_test, y_train, y_test = perform_feature_engineering(X, y)
-        y_train_preds_rf, y_test_preds_rf = train_models(x_train,x_test,y_train,y_test)
-        report = classification_report(y_test,y_test_preds_rf,zero_division=0)
-        classification_report_txt(report)
+    report = classification_report(y_test,y_test_preds_rf,zero_division=0)
+    classification_report_txt(report)
             
